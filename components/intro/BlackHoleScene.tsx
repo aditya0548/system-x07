@@ -8,12 +8,12 @@ export interface BlackHoleSceneProps {
 
 export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
   const [showBlackHole, setShowBlackHole] = useState(false);
-  const [scale, setScale] = useState(0.4);
   const [showText1, setShowText1] = useState(false);
   const [showText2, setShowText2] = useState(false);
   const [flash, setFlash] = useState(false);
   const [fadeBlack, setFadeBlack] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const groupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Layer 7: Star Particles setup
@@ -24,57 +24,44 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
 
     let animationFrameId: number;
 
-    const bgParticles = Array.from({ length: 80 }).map(() => ({
+    const particles = Array.from({ length: 120 }, () => ({
       angle: Math.random() * Math.PI * 2,
-      radius: 140 + Math.random() * 150, // 140 - 290
-      size: 0.5 + Math.random(), // 0.5 - 1.5px
-      opacity: 0.3 + Math.random() * 0.5, // 0.3 - 0.8
-    }));
-
-    const diskParticles = Array.from({ length: 40 }).map(() => ({
-      x: Math.random() * canvas.width,
-      y: 240 + Math.random() * 20, // 240 - 260px
-      speed: 2 + Math.random() * 3,
+      radius: 150 + Math.random() * 140,
+      speed: 0.002 + Math.random() * 0.003,
+      size: 0.5 + Math.random() * 1.5,
+      opacity: 0.3 + Math.random() * 0.5,
+      type: Math.random() > 0.7 ? "streak" : "dot",
     }));
 
     const renderParticles = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
 
-      // Draw background drifting particles
-      bgParticles.forEach((p) => {
-        p.radius -= 0.02;
-
-        if (p.radius < 140) {
-          p.radius = 250 + Math.random() * 40; // respawn at 250-290
+      particles.forEach((p) => {
+        p.angle += p.speed;
+        p.radius -= 0.015;
+        if (p.radius < 130) {
+          p.radius = 250 + Math.random() * 40;
           p.angle = Math.random() * Math.PI * 2;
+          p.opacity = 0.3 + Math.random() * 0.5;
         }
 
-        const x = centerX + Math.cos(p.angle) * p.radius;
-        const y = centerY + Math.sin(p.angle) * p.radius;
-
-        let currentOpacity = p.opacity;
-        if (p.radius < 150) {
-          currentOpacity = p.opacity * ((p.radius - 140) / 10);
-        }
+        const x = canvas.width / 2 + Math.cos(p.angle) * p.radius;
+        const y = canvas.height / 2 + Math.sin(p.angle) * p.radius * 0.35;
 
         ctx.beginPath();
-        ctx.arc(x, y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, currentOpacity)})`;
-        ctx.fill();
-      });
-
-      // Draw horizontal disk streaks
-      diskParticles.forEach((p) => {
-        p.x += p.speed;
-        if (p.x > canvas.width) {
-          p.x = 0;
-          p.y = 240 + Math.random() * 20; // 240-260px
+        if (p.type === "streak") {
+          ctx.strokeStyle = `rgba(255,140,0,${p.opacity * 0.6})`;
+          ctx.lineWidth = 1;
+          const x2 = canvas.width / 2 + Math.cos(p.angle - 0.05) * (p.radius + 3);
+          const y2 = canvas.height / 2 + Math.sin(p.angle - 0.05) * (p.radius + 3) * 0.35;
+          ctx.moveTo(x2, y2);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = `rgba(255,255,255,${p.opacity})`;
+          ctx.arc(x, y, p.size, 0, Math.PI * 2);
+          ctx.fill();
         }
-
-        ctx.fillStyle = "rgba(255,140,0,0.6)";
-        ctx.fillRect(p.x, p.y, 3, 1); // 1px x 3px (elongated, width 3, height 1)
       });
 
       animationFrameId = requestAnimationFrame(renderParticles);
@@ -90,7 +77,12 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
     const t0 = setTimeout(() => setShowBlackHole(true), 0);
 
     // 100ms: camera approach
-    const tScale = setTimeout(() => setScale(1.5), 100);
+    const tScale = setTimeout(() => {
+      if (groupRef.current) {
+        groupRef.current.style.transform = 'scale(1.5)'
+        groupRef.current.style.transition = 'transform 14s ease-in'
+      }
+    }, 100);
 
     // 8s: text line 1
     const t8 = setTimeout(() => setShowText1(true), 8000);
@@ -144,14 +136,44 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
   return (
     <>
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
+        @keyframes diskRotate {
+          from { transform: translate(-50%,-50%) rotate(0deg) scaleY(0.19); }
+          to { transform: translate(-50%,-50%) rotate(360deg) scaleY(0.19); }
         }
 
-        @keyframes diskPulse {
-          0%, 100% { opacity: 0.85; filter: blur(5px) brightness(1); }
-          50% { opacity: 1; filter: blur(4px) brightness(1.15); }
+        @keyframes shimmer {
+          0%,100% { filter: blur(5px) brightness(1); }
+          50% { filter: blur(4px) brightness(1.3); }
+        }
+
+        @keyframes ringPulse {
+          0%,100% {
+            box-shadow:
+              0 0 0 1.5px rgba(255,220,150,0.9),
+              0 0 0 3px rgba(255,160,40,0.4),
+              0 0 0 8px rgba(255,100,0,0.15),
+              0 0 20px rgba(255,120,0,0.3);
+            opacity: 0.9;
+          }
+          50% {
+            box-shadow:
+              0 0 0 1.5px rgba(255,240,180,1),
+              0 0 0 4px rgba(255,180,60,0.6),
+              0 0 0 12px rgba(255,120,0,0.25),
+              0 0 35px rgba(255,140,0,0.5);
+            opacity: 1;
+          }
+        }
+
+        @keyframes glowBreathe {
+          0%,100% {
+            transform: translate(-50%,-50%) scale(1);
+            opacity: 0.6;
+          }
+          50% {
+            transform: translate(-50%,-50%) scale(1.08);
+            opacity: 1;
+          }
         }
       `}</style>
 
@@ -183,12 +205,12 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
 
         {/* Black Hole Group */}
         <div
+          ref={groupRef}
           style={{
             position: "relative",
             width: "500px",
             height: "500px",
-            transform: `scale(${scale})`,
-            transition: "transform 14s ease-in",
+            transform: "scale(0.4)",
           }}
         >
           {/* Layer 1: Outer Nebula Glow */}
@@ -200,7 +222,7 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
               borderRadius: "50%",
               background: "radial-gradient(circle, rgba(255,100,0,0.06) 0%, rgba(255,60,0,0.04) 35%, rgba(150,40,0,0.02) 55%, transparent 70%)",
               zIndex: 1,
-              animation: "pulse 4s ease-in-out infinite",
+              animation: "glowBreathe 6s ease-in-out infinite",
             }}
           />
 
@@ -209,12 +231,12 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
             style={{
               ...absoluteCenter,
               width: "580px",
-              height: "110px",
+              height: "580px",
               borderRadius: "50%",
               background: diskGradient,
               filter: "blur(5px)",
               zIndex: 2,
-              animation: "diskPulse 6s ease-in-out infinite",
+              animation: "diskRotate 40s linear infinite, shimmer 3s ease-in-out infinite",
             }}
           />
 
@@ -265,8 +287,8 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
               borderRadius: "50%",
               background: "transparent",
               border: "none",
-              boxShadow: "0 0 0 1.5px rgba(255,220,150,0.9), 0 0 0 3px rgba(255,160,40,0.4), 0 0 0 8px rgba(255,100,0,0.15), 0 0 20px rgba(255,120,0,0.3)",
               zIndex: 6,
+              animation: "ringPulse 2s ease-in-out infinite",
             }}
           />
 
@@ -282,6 +304,7 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
               opacity: 0.9,
               zIndex: 7,
               clipPath: "ellipse(290px 55px at 50% 0%)",
+              animation: "shimmer 3s ease-in-out infinite",
             }}
           />
         </div>
