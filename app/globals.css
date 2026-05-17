@@ -7,13 +7,24 @@
   --foreground: #f8f4ff;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
+html, body {
   background-color: #000008;
+}
+
+body {
+  font-family: var(--font-inter);
+  color: var(--foreground);
   cursor: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-cormorant-garamond);
+}
+
+.font-mono {
+  font-family: var(--font-space-mono);
 }
 
 * {
