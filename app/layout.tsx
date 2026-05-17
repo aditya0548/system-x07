@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "System X-07",
-  description: "A cinematic space portfolio",
+  description: "Navigate the unknown.",
 };
 
 export default function RootLayout({
