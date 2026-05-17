@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export interface BlackHoleSceneProps {
   onComplete: () => void;
@@ -13,6 +13,83 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
   const [showText2, setShowText2] = useState(false);
   const [flash, setFlash] = useState(false);
   const [fadeBlack, setFadeBlack] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    // Enhancement 3: Particles setup
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId: number;
+
+    const particles = Array.from({ length: 24 }).map(() => {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 160 + Math.random() * 120; // 160px - 280px
+      return {
+        angle,
+        radius,
+        speed: 0.002 + Math.random() * 0.005,
+        inwardSpeed: 0.2 + Math.random() * 0.5,
+        history: [] as { x: number; y: number }[],
+      };
+    });
+
+    const renderParticles = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      particles.forEach((p) => {
+        // Update position
+        p.angle += p.speed * (300 / Math.max(p.radius, 20)); // faster when closer
+        p.radius -= p.inwardSpeed;
+
+        if (p.radius < 20) {
+          p.angle = Math.random() * Math.PI * 2;
+          p.radius = 160 + Math.random() * 120;
+          p.history = [];
+        }
+
+        const x = centerX + Math.cos(p.angle) * p.radius;
+        const y = centerY + Math.sin(p.angle) * p.radius;
+
+        p.history.push({ x, y });
+        if (p.history.length > 4) {
+          p.history.shift();
+        }
+
+        // Draw trail
+        if (p.history.length > 1) {
+          for (let i = 0; i < p.history.length - 1; i++) {
+            const h = p.history[i];
+            const nextH = p.history[i + 1];
+            ctx.beginPath();
+            ctx.moveTo(h.x, h.y);
+            ctx.lineTo(nextH.x, nextH.y);
+            const alpha = ((i + 1) / p.history.length) * (p.radius / 280);
+            ctx.strokeStyle = `rgba(255, 140, 0, ${alpha * 0.5})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+        const alpha = Math.max(0.1, Math.min(1, p.radius / 200));
+        ctx.fillStyle = `rgba(255, 140, 0, ${alpha})`;
+        ctx.fill();
+      });
+
+      animationFrameId = requestAnimationFrame(renderParticles);
+    };
+
+    renderParticles();
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
 
   useEffect(() => {
     // 0s: black hole appears
@@ -86,95 +163,144 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
         <div
           className="relative w-full h-full flex items-center justify-center"
           style={{
-            transform: approaching ? "scale(1.4)" : "scale(0.6)",
-            transition: approaching ? "transform 10s ease-in" : "none",
+            transform: approaching ? "scale(1.6)" : "scale(0.5)",
+            transition: approaching ? "transform 14s ease-in" : "none",
           }}
         >
-          {/* Layer 1: Outer Glow */}
+          {/* Enhancement 1: Centering wrapper */}
           <div
-            className="absolute rounded-full"
             style={{
-              width: "600px",
-              height: "600px",
-              background:
-                "radial-gradient(circle, rgba(255,140,0,0.04) 0%, rgba(255,100,0,0.02) 40%, transparent 70%)",
-              animation: "pulse 4s ease-in-out infinite",
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
             }}
-          />
+            className="flex items-center justify-center"
+          >
+            {/* Layer 1: Outer Glow */}
+            <div
+              className="absolute rounded-full"
+              style={{
+                width: "800px",
+                height: "800px",
+                background:
+                  "radial-gradient(circle, rgba(255,100,0,0.08) 0%, rgba(255,60,0,0.04) 30%, rgba(100,20,0,0.02) 60%, transparent 75%)",
+                animation: "pulse 4s ease-in-out infinite",
+              }}
+            />
 
-          {/* Layer 2: Accretion Disk (back) */}
-          <div
-            className="absolute rounded-full z-[1]"
-            style={{
-              width: "520px",
-              height: "130px",
-              background:
-                "linear-gradient(to right, transparent 0%, rgba(255,80,0,0.15) 20%, rgba(255,140,0,0.5) 40%, rgba(255,200,100,0.8) 50%, rgba(255,140,0,0.5) 60%, rgba(255,80,0,0.15) 80%, transparent 100%)",
-              filter: "blur(8px)",
-              animation: "rotate 12s linear infinite",
-              transformOrigin: "center center",
-            }}
-          />
+            {/* Layer 1.5: Photon Ring Glow */}
+            <div
+              className="absolute rounded-full"
+              style={{
+                width: "700px",
+                height: "700px",
+                background:
+                  "radial-gradient(circle, transparent 130px, rgba(255,80,0,0.06) 160px, rgba(255,120,0,0.1) 180px, rgba(255,80,0,0.06) 200px, transparent 230px)",
+              }}
+            />
 
-          {/* Layer 3: Black Sphere */}
-          <div
-            className="absolute rounded-full z-[3]"
-            style={{
-              width: "280px",
-              height: "280px",
-              background: "radial-gradient(circle at 35% 35%, #0a0a0f, #000004)",
-              boxShadow:
-                "0 0 60px rgba(0,0,0,1), 0 0 120px rgba(0,0,0,0.8), inset 0 0 40px rgba(0,0,0,1)",
-            }}
-          />
+            {/* Layer 2: Accretion Disk (back) */}
+            <div
+              className="absolute rounded-full z-[1]"
+              style={{
+                width: "640px",
+                height: "140px",
+                background:
+                  "conic-gradient(from 0deg, transparent 0%, rgba(120,40,0,0.3) 10%, rgba(200,80,0,0.7) 20%, rgba(255,140,0,0.9) 30%, rgba(255,200,80,1) 35%, rgba(255,160,40,0.9) 40%, rgba(200,80,0,0.6) 50%, rgba(120,40,0,0.3) 60%, transparent 70%, transparent 100%)",
+                filter: "blur(6px)",
+                animation: "rotate 16s linear infinite",
+                transformOrigin: "center center",
+              }}
+            />
 
-          {/* Layer 4: Accretion Disk (front) */}
-          <div
-            className="absolute rounded-full z-[4]"
-            style={{
-              width: "520px",
-              height: "130px",
-              background:
-                "linear-gradient(to right, transparent 0%, rgba(255,80,0,0.15) 20%, rgba(255,140,0,0.5) 40%, rgba(255,200,100,0.8) 50%, rgba(255,140,0,0.5) 60%, rgba(255,80,0,0.15) 80%, transparent 100%)",
-              filter: "blur(4px)",
-              animation: "rotate 12s linear infinite",
-              transformOrigin: "center center",
-              clipPath: "ellipse(260px 65px at 50% 50%)",
-              opacity: 0.7,
-            }}
-          />
+            {/* Layer 3: Black Sphere */}
+            <div
+              className="absolute rounded-full z-[3]"
+              style={{
+                width: "320px",
+                height: "320px",
+                background: "radial-gradient(circle at 35% 35%, #0a0a0f, #000004)",
+                boxShadow:
+                  "0 0 60px rgba(0,0,0,1), 0 0 120px rgba(0,0,0,0.8), inset 0 0 40px rgba(0,0,0,1)",
+              }}
+            />
 
-          {/* Layer 5: Gravitational Lensing Ring */}
-          <div
-            className="absolute rounded-full z-[2] bg-transparent"
-            style={{
-              width: "320px",
-              height: "320px",
-              border: "2px solid rgba(255,140,0,0.15)",
-              boxShadow:
-                "0 0 20px rgba(255,140,0,0.1), inset 0 0 20px rgba(255,140,0,0.05)",
-              animation: "rotateReverse 20s linear infinite",
-            }}
-          />
+            {/* Layer 4: Accretion Disk (front) */}
+            <div
+              className="absolute rounded-full z-[4]"
+              style={{
+                width: "640px",
+                height: "140px",
+                background:
+                  "conic-gradient(from 0deg, transparent 0%, rgba(120,40,0,0.3) 10%, rgba(200,80,0,0.7) 20%, rgba(255,140,0,0.9) 30%, rgba(255,200,80,1) 35%, rgba(255,160,40,0.9) 40%, rgba(200,80,0,0.6) 50%, rgba(120,40,0,0.3) 60%, transparent 70%, transparent 100%)",
+                filter: "blur(3px)",
+                animation: "rotate 16s linear infinite",
+                transformOrigin: "center center",
+                clipPath: "ellipse(310px 60px at 50% 50%)",
+                opacity: 0.85,
+              }}
+            />
 
-          {/* Layer 6: Particle Streams */}
-          <div className="absolute flex items-center justify-center w-full h-full z-[2]">
-            {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, index) => (
-              <div
-                key={angle}
-                className="absolute"
-                style={{
-                  width: "1px",
-                  height: "80px",
-                  background:
-                    "linear-gradient(to bottom, rgba(255,140,0,0.6), transparent)",
-                  transformOrigin: "bottom center",
-                  transform: `rotate(${angle}deg) translateY(-140px)`,
-                  animation: `streamPulse 2s ease-in-out infinite`,
-                  animationDelay: `${index * 0.25}s`,
-                }}
-              />
-            ))}
+            {/* Layer 5: Gravitational Lensing Ring */}
+            <div
+              className="absolute rounded-full z-[2] bg-transparent"
+              style={{
+                width: "320px",
+                height: "320px",
+                border: "2px solid rgba(255,140,0,0.15)",
+                boxShadow:
+                  "0 0 20px rgba(255,140,0,0.1), inset 0 0 20px rgba(255,140,0,0.05)",
+                animation: "rotateReverse 20s linear infinite",
+              }}
+            />
+
+            {/* Layer 6: Particle Streams (Canvas) */}
+            <canvas
+              ref={canvasRef}
+              width={600}
+              height={600}
+              className="absolute z-[2] pointer-events-none"
+            />
+
+            {/* Layer 8: SVG filter overlay (Enhancement 6) */}
+            <div
+              className="absolute pointer-events-none opacity-40"
+              style={{
+                width: "800px",
+                height: "800px",
+                zIndex: 6,
+                maskImage:
+                  "radial-gradient(circle at 50% 50%, transparent 160px, black 250px)",
+                WebkitMaskImage:
+                  "radial-gradient(circle at 50% 50%, transparent 160px, black 250px)",
+              }}
+            >
+              <svg width="100%" height="100%">
+                <filter id="distort">
+                  <feTurbulence
+                    type="fractalNoise"
+                    baseFrequency="0.015"
+                    numOctaves="2"
+                    seed="2"
+                    result="noise"
+                  />
+                  <feDisplacementMap
+                    in="SourceGraphic"
+                    in2="noise"
+                    scale="8"
+                    xChannelSelector="R"
+                    yChannelSelector="G"
+                  />
+                </filter>
+                <rect
+                  width="100%"
+                  height="100%"
+                  filter="url(#distort)"
+                  opacity="0.3"
+                />
+              </svg>
+            </div>
           </div>
 
           {/* Layer 7: Lens Distortion Overlay */}
@@ -197,6 +323,7 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
               color: "rgba(255,200,100,0.7)",
               opacity: showText1 ? 1 : 0,
               transition: "opacity 1s ease-in-out",
+              textShadow: "-1px 0 rgba(255,0,0,0.3), 1px 0 rgba(0,0,255,0.3)",
             }}
           >
             Beyond known space...
@@ -210,6 +337,7 @@ export default function BlackHoleScene({ onComplete }: BlackHoleSceneProps) {
               opacity: showText2 ? 1 : 0,
               transition: "opacity 1s ease-in-out",
               marginTop: "16px",
+              textShadow: "-1px 0 rgba(255,0,0,0.3), 1px 0 rgba(0,0,255,0.3)",
             }}
           >
             Approaching System X-07
