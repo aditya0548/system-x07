@@ -4,23 +4,28 @@ import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import LoadingScreen from "../components/ui/LoadingScreen";
 import CustomCursor from "../components/ui/CustomCursor";
+import BlackHoleScene from "../components/intro/BlackHoleScene";
 
 export default function Home() {
-  const [loadingComplete, setLoadingComplete] = useState(false);
+  const [phase, setPhase] = useState<'loading' | 'blackhole' | 'space'>('loading');
 
   return (
     <>
       <CustomCursor />
       <AnimatePresence>
-        {!loadingComplete && (
-          <LoadingScreen onComplete={() => setLoadingComplete(true)} />
+        {phase === 'loading' && (
+          <LoadingScreen onComplete={() => setPhase('blackhole')} />
         )}
       </AnimatePresence>
 
-      {loadingComplete && (
+      {phase === 'blackhole' && (
+        <BlackHoleScene onComplete={() => setPhase('space')} />
+      )}
+
+      {phase === 'space' && (
         <main className="w-screen h-screen bg-space flex items-center justify-center">
           <div className="text-star font-mono text-center">
-            SYSTEM X-07
+            SYSTEM X-07 — NAVIGATION ACTIVE
           </div>
         </main>
       )}
