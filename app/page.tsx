@@ -2,13 +2,21 @@
 
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import LoadingScreen from "../components/ui/LoadingScreen";
 import CustomCursor from "../components/ui/CustomCursor";
-import BlackHoleScene from "../components/intro/BlackHoleScene";
 import dynamic from "next/dynamic";
 
 const SpaceshipScene = dynamic(
   () => import("../components/intro/SpaceshipScene"),
+  { ssr: false }
+);
+
+const BlackHoleScene = dynamic(
+  () => import("../components/intro/BlackHoleScene"),
+  { ssr: false }
+);
+
+const LoadingScreen = dynamic(
+  () => import("../components/ui/LoadingScreen"),
   { ssr: false }
 );
 

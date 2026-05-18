@@ -200,6 +200,20 @@ function CameraAnimation() {
   return null;
 }
 
+function ShipScene() {
+  return (
+    <>
+      <ambientLight color="#000820" intensity={0.4} />
+      <directionalLight color="#2244aa" intensity={1.5} position={[3, 2, -5]} />
+      <directionalLight color="#4466ff" intensity={0.8} position={[-2, -1, 3]} />
+
+      <SpaceshipModel />
+      <StarField />
+      <CameraAnimation />
+    </>
+  );
+}
+
 export default function SpaceshipScene({ onComplete }: SpaceshipSceneProps) {
   const [showSystemText, setShowSystemText] = useState(false);
   const [showVesselText, setShowVesselText] = useState(false);
@@ -231,13 +245,7 @@ export default function SpaceshipScene({ onComplete }: SpaceshipSceneProps) {
         camera={{ position: [0, 1.5, 12], fov: 60 }}
         gl={{ antialias: true }}
       >
-        <ambientLight color="#000820" intensity={0.4} />
-        <directionalLight color="#2244aa" intensity={1.5} position={[3, 2, -5]} />
-        <directionalLight color="#4466ff" intensity={0.8} position={[-2, -1, 3]} />
-
-        <SpaceshipModel />
-        <StarField />
-        <CameraAnimation />
+        <ShipScene />
       </Canvas>
 
       {/* Cinematic Text Overlay */}
