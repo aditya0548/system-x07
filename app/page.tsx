@@ -5,7 +5,12 @@ import { AnimatePresence } from "framer-motion";
 import LoadingScreen from "../components/ui/LoadingScreen";
 import CustomCursor from "../components/ui/CustomCursor";
 import BlackHoleScene from "../components/intro/BlackHoleScene";
-import SpaceshipScene from "../components/intro/SpaceshipScene";
+import dynamic from "next/dynamic";
+
+const SpaceshipScene = dynamic(
+  () => import("../components/intro/SpaceshipScene"),
+  { ssr: false }
+);
 
 export default function Home() {
   const [phase, setPhase] = useState<'loading' | 'spaceship' | 'cockpit' | 'blackhole' | 'space'>('loading');
