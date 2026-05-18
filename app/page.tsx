@@ -5,18 +5,27 @@ import { AnimatePresence } from "framer-motion";
 import LoadingScreen from "../components/ui/LoadingScreen";
 import CustomCursor from "../components/ui/CustomCursor";
 import BlackHoleScene from "../components/intro/BlackHoleScene";
+import SpaceshipScene from "../components/intro/SpaceshipScene";
 
 export default function Home() {
-  const [phase, setPhase] = useState<'loading' | 'blackhole' | 'space'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'spaceship' | 'cockpit' | 'blackhole' | 'space'>('loading');
 
   return (
     <>
       <CustomCursor />
       <AnimatePresence>
         {phase === 'loading' && (
-          <LoadingScreen onComplete={() => setPhase('blackhole')} />
+          <LoadingScreen onComplete={() => setPhase('spaceship')} />
         )}
       </AnimatePresence>
+
+      {phase === 'spaceship' && (
+        <SpaceshipScene onComplete={() => setPhase('cockpit')} />
+      )}
+
+      {phase === 'cockpit' && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: '#000008', zIndex: 100 }} />
+      )}
 
       {phase === 'blackhole' && (
         <BlackHoleScene onComplete={() => setPhase('space')} />
